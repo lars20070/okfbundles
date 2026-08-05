@@ -42,6 +42,7 @@
     "monkeypatch",
     "qwen",
     "resumability",
-    "unzippable"
+    "unzippable",
+    "dotglob"
   ]
 }
