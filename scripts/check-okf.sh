@@ -15,6 +15,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if ! command -v pnpm >/dev/null 2>&1; then
+	echo "pnpm is required (npm install -g pnpm) to lint OKF bundles" >&2
+	exit 1
+fi
+
 # 1. okf/ must contain only *.okf.zip files
 bad=$(find "${okf_dir}" -mindepth 1 -maxdepth 1 ! -name '*.okf.zip')
 if [[ -n "${bad}" ]]; then
@@ -53,6 +58,10 @@ for zip in "${okf_dir}"/*.okf.zip; do
 		status=1
 	elif [[ ! -f "${roots[0]}/.okflintrc.json" ]]; then
 		echo "${zip}: root directory '$(basename "${roots[0]}")' is missing .okflintrc.json"
+		status=1
+	# 4. the bundle must lint cleanly with okf-lint
+	elif ! pnpm dlx @thisismydesign/okf-lint "${roots[0]}"; then
+		echo "${zip}: failed okf-lint"
 		status=1
 	fi
 done

@@ -21,10 +21,11 @@ content should satisfy before it gets zipped back up.
 CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
 `okf/**`, `scripts/**`, or the `Makefile`:
 
-- `make check-okf` (`scripts/check-okf.sh`) verifies:
+- `make check-okf` (`scripts/check-okf.sh`, requires `pnpm`) verifies:
   - `okf/` contains only `*.okf.zip` files.
   - Each zip is a healthy archive that unzips cleanly.
   - Each zip's root directory contains a `.okflintrc.json`.
+  - Each zip lints cleanly with `pnpm dlx @thisismydesign/okf-lint`.
 - `make shellcheck` runs shellcheck over every script in `scripts/`.
 
 ## Skills
