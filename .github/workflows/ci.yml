@@ -4,13 +4,15 @@ on:
   push:
     paths:
       - "okf/**"
+      - "scripts/**"
       - "Makefile"
-      - ".github/workflows/check-okf.yml"
+      - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "okf/**"
+      - "scripts/**"
       - "Makefile"
-      - ".github/workflows/check-okf.yml"
+      - ".github/workflows/ci.yml"
 
 permissions:
   contents: read
@@ -21,3 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: make check-okf
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: make shellcheck

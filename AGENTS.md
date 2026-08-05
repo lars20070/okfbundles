@@ -18,12 +18,14 @@ content should satisfy before it gets zipped back up.
 
 ## Checks
 
-`make check-okf` (`scripts/check-okf.sh`, run in CI on every push/PR touching
-`okf/**`) verifies:
+CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
+`okf/**`, `scripts/**`, or the `Makefile`:
 
-- `okf/` contains only `*.okf.zip` files.
-- Each zip is a healthy archive that unzips cleanly.
-- Each zip's root directory contains a `.okflintrc.json`.
+- `make check-okf` (`scripts/check-okf.sh`) verifies:
+  - `okf/` contains only `*.okf.zip` files.
+  - Each zip is a healthy archive that unzips cleanly.
+  - Each zip's root directory contains a `.okflintrc.json`.
+- `make shellcheck` runs shellcheck over every script in `scripts/`.
 
 ## Skills
 

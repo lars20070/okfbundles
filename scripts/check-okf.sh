@@ -7,6 +7,7 @@ okf_dir="$repo_root/okf"
 
 # clean up extraction temp dirs on exit
 tmp_dirs=()
+# shellcheck disable=SC2329 # invoked indirectly via trap below
 cleanup() {
 	for d in "${tmp_dirs[@]:-}"; do
 		[ -n "$d" ] && rm -rf "$d"
