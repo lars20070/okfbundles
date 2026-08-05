@@ -41,6 +41,7 @@
     "conftest",
     "monkeypatch",
     "qwen",
-    "resumability"
+    "resumability",
+    "unzippable"
   ]
 }
