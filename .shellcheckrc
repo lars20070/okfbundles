@@ -1,0 +1,4 @@
+enable=require-variable-braces
+enable=check-extra-masked-returns
+enable=require-double-brackets
+enable=check-set-e-suppressed
