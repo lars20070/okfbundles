@@ -34,14 +34,20 @@ check_bundle() {
 	find "${dest}" -depth \( -name '__MACOSX' -o -name '.DS_Store' \) -exec rm -rf {} +
 
 	# 3. the archive's single root directory must contain .okflintrc.json
-	local roots=("${dest}"/*/)
-	if [[ ${#roots[@]} -ne 1 ]]; then
-		echo "${zip}: expected exactly one root directory in the archive, found ${#roots[@]}"
+	local entries=("${dest}"/*)
+	if [[ ${#entries[@]} -ne 1 ]]; then
+		echo "${zip}: expected exactly one top-level entry in the archive, found ${#entries[@]}"
 		status=1
 		return 0
 	fi
 
-	local root="${roots[0]%/}"
+	local root="${entries[0]}"
+	if [[ ! -d "${root}" ]]; then
+		echo "${zip}: top-level entry '${root##*/}' is not a directory"
+		status=1
+		return 0
+	fi
+
 	if [[ ! -f "${root}/.okflintrc.json" ]]; then
 		echo "${zip}: root directory '${root##*/}' is missing .okflintrc.json"
 		status=1
