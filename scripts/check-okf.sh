@@ -30,7 +30,8 @@ check_bundle() {
 		status=1
 		return 0
 	fi
-	rm -rf "${dest}/__MACOSX" # macOS zip cruft, not part of the bundle
+	# mask macOS zip cruft anywhere in the tree; it's not part of the bundle
+	find "${dest}" -depth \( -name '__MACOSX' -o -name '.DS_Store' \) -exec rm -rf {} +
 
 	# 3. the archive's single root directory must contain .okflintrc.json
 	local roots=("${dest}"/*/)
@@ -54,8 +55,9 @@ check_bundle() {
 	fi
 }
 
-# 1. okf/ folder must contain only *.okf.zip files
-bad=$(find "${okf_dir}" -mindepth 1 -maxdepth 1 ! -name '*.okf.zip')
+# 1. okf/ folder must contain only *.okf.zip files (macOS metadata is masked)
+bad=$(find "${okf_dir}" -mindepth 1 -maxdepth 1 \
+	! -name '*.okf.zip' ! -name '__MACOSX' ! -name '.DS_Store')
 if [[ -n "${bad}" ]]; then
 	echo "okf/ must contain only *.okf.zip files, found:"
 	echo "${bad}"

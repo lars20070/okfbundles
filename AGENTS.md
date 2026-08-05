@@ -29,6 +29,10 @@ CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
   - Each zip lints cleanly with `pnpm dlx @thisismydesign/okf-lint`.
 - `make shellcheck` runs shellcheck over every script in `scripts/`.
 
+`.DS_Store` and `__MACOSX` (macOS zip metadata) are masked throughout these
+checks and tests — both in `okf/` itself and inside `*.okf.zip` archives, at
+any depth. Their presence never fails a check.
+
 ## Skills
 
 - `context7-docs` — fetch current library/framework docs before writing code
