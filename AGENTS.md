@@ -6,13 +6,14 @@ This repo is a simple collection of [Open Knowledge Format](https://github.com/G
 (OKF) bundles — plain markdown-with-YAML-frontmatter wikis, vendor-neutral and
 readable by humans and agents alike.
 
-Each bundle lives under `okf/` as a `<name>.okf.zip` archive: a zipped
-directory tree of `.md` files. A bundle's root `index.md` is the only file
-allowed frontmatter (may declare `okf_version`); every other `.md` file needs
-a parseable frontmatter block with a non-empty `type`. `log.md`, if present,
-records changes as dated entries (newest first, ISO 8601 dates).
+Each bundle lives under `okf/` as a `<name>.okf.zip` archive holding a single
+root directory with the bundle tree inside it. Every non-reserved `.md` file
+needs a frontmatter block with a non-empty `type`. `index.md` and `log.md` are
+reserved and carry no frontmatter — except the bundle-root `index.md`, which
+declares `okf_version`. `log.md`, if present, records changes as dated entries
+(newest first, ISO 8601 dates).
 
-`okf/.okflintrc.json` inside each bundle defines the lint rules (titles,
+`.okflintrc.json` in the bundle root defines the lint rules (titles,
 descriptions, timestamps, valid links, log ordering, etc.) that bundle's
 content should satisfy before it gets zipped back up.
 
@@ -24,7 +25,7 @@ CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
 - `make check-okf` (`scripts/check-okf.sh`, requires `pnpm`) verifies:
   - `okf/` contains only `*.okf.zip` files.
   - Each zip is a healthy archive that unzips cleanly.
-  - Each zip's root directory contains a `.okflintrc.json`.
+  - Each zip holds exactly one root directory, containing a `.okflintrc.json`.
   - Each zip lints cleanly with `pnpm dlx @thisismydesign/okf-lint`.
 - `make shellcheck` runs shellcheck over every script in `scripts/`.
 
