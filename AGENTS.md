@@ -16,6 +16,15 @@ records changes as dated entries (newest first, ISO 8601 dates).
 descriptions, timestamps, valid links, log ordering, etc.) that bundle's
 content should satisfy before it gets zipped back up.
 
+## Checks
+
+`make check-okf` (`scripts/check-okf.sh`, run in CI on every push/PR touching
+`okf/**`) verifies:
+
+- `okf/` contains only `*.okf.zip` files.
+- Each zip is a healthy archive that unzips cleanly.
+- Each zip's root directory contains a `.okflintrc.json`.
+
 ## Skills
 
 - `context7-docs` — fetch current library/framework docs before writing code
