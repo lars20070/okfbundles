@@ -9,14 +9,14 @@ okf_dir="${repo_root}/okf"
 work_dir=$(mktemp -d)
 trap 'rm -rf "${work_dir}"' EXIT
 
-if ! command -v pnpm >/dev/null 2>&1; then
-	echo "pnpm is required (npm install -g pnpm) to lint OKF bundles" >&2
+if ! command -v okfctl >/dev/null 2>&1; then
+	echo "okfctl is required (https://github.com/cwest/okfctl) to validate OKF bundles" >&2
 	exit 1
 fi
 
 status=0
 
-# Checks 2 to 4 for one bundle. Prints its own diagnostics and records problems in
+# Checks 2 to 5 for one bundle. Prints its own diagnostics and records problems in
 # `status` rather than returning non-zero, so it can be called as a plain
 # command: that keeps `set -e` active inside it, and lets every bundle be
 # checked even after one fails.
@@ -33,7 +33,7 @@ check_bundle() {
 	# mask macOS zip cruft anywhere in the tree; it's not part of the bundle
 	find "${dest}" -depth \( -name '__MACOSX' -o -name '.DS_Store' \) -exec rm -rf {} +
 
-	# 3. the archive's single root directory must contain .okflintrc.json
+	# 3. the archive holds a single root directory, without .okflintrc.json
 	local entries=("${dest}"/*)
 	if [[ ${#entries[@]} -ne 1 ]]; then
 		echo "${zip}: expected exactly one top-level entry in the archive, found ${#entries[@]}"
@@ -48,15 +48,33 @@ check_bundle() {
 		return 0
 	fi
 
-	if [[ ! -f "${root}/.okflintrc.json" ]]; then
-		echo "${zip}: root directory '${root##*/}' is missing .okflintrc.json"
+	if [[ -f "${root}/.okflintrc.json" ]]; then
+		echo "${zip}: root directory '${root##*/}' must not contain .okflintrc.json"
 		status=1
 		return 0
 	fi
 
-	# 4. the bundle must lint cleanly with okf-lint
-	if ! pnpm dlx @thisismydesign/okf-lint "${root}"; then
-		echo "${zip}: failed okf-lint"
+	# 4. the root index.md must declare okf_version "0.2"; okfctl validate
+	# treats the declaration as optional, so it's enforced here
+	if [[ ! -f "${root}/index.md" ]]; then
+		echo "${zip}: root directory '${root##*/}' is missing index.md"
+		status=1
+		return 0
+	fi
+	if ! awk '
+		NR == 1 { if ($0 != "---") exit; open = 1; next }
+		$0 == "---" { closed = 1; exit }
+		$0 == "okf_version: \"0.2\"" { found = 1 }
+		END { exit !(open && closed && found) }
+	' "${root}/index.md"; then
+		echo "${zip}: root index.md must declare okf_version: \"0.2\""
+		status=1
+		return 0
+	fi
+
+	# 5. the bundle must conform to the OKF v0.2 spec floor
+	if ! okfctl validate "${root}"; then
+		echo "${zip}: failed okfctl validate"
 		status=1
 	fi
 }
