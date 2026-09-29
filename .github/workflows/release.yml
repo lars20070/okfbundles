@@ -1,0 +1,65 @@
+name: Release
+
+# Pushing a vX.Y.Z tag creates a GitHub Release whose notes are that version's
+# CHANGELOG.md section, once the normal CI passes and the tag, VERSION and
+# CHANGELOG.md agree. A tag alone never creates a Release.
+
+on:
+  push:
+    # Actions filter glob, not a regex: '+' means one or more of the preceding
+    # character and '.' is literal. Digit-only, so vX.Y.Z-rc1 can't trigger.
+    # scripts/check-version.sh re-validates the tag with a real regex.
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+# Never cancel a release in flight. The prefix must differ from ci.yml's
+# `${{ github.workflow }}-...` group, which evaluates to "Release-<ref>" when
+# called from here; group names are case-insensitive.
+concurrency:
+  group: release-tag-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  github-release:
+    needs: [ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # The only job that writes to the repository.
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Check the tag, VERSION and CHANGELOG.md agree
+        run: scripts/check-version.sh "${GITHUB_REF_NAME}"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # Re-runs converge: an existing Release is left alone, so notes
+          # edited by hand on GitHub survive. Only a 404 means "absent"; any
+          # other lookup failure (auth, API outage) fails the job.
+          if lookup_err=$(gh api "repos/${GH_REPO}/releases/tags/${TAG}" --silent 2>&1); then
+            echo "::notice::Release ${TAG} already exists; leaving it unchanged"
+            exit 0
+          fi
+          if [[ "${lookup_err}" != *"(HTTP 404)"* ]]; then
+            echo "::error::Could not look up release ${TAG}: ${lookup_err}"
+            exit 1
+          fi
+          # Read the notes before creating, so a failing extractor can't
+          # leave behind an empty Release.
+          notes=$(scripts/release-notes.sh "${TAG#v}")
+          printf '%s\n' "${notes}" |
+            gh release create "${TAG}" --title "${TAG}" --verify-tag --notes-file -

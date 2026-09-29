@@ -5,8 +5,6 @@ A collection of [Open Knowledge Format](https://github.com/GoogleCloudPlatform/k
 
 Each bundle sits in [okf/](okf/) as a `<name>.okf.zip` file and targets
 [OKF v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
-[attic/](attic/) keeps the original OKF v0.1 archives for reference; CI
-doesn't check them.
 
 ## Add a bundle
 
@@ -30,3 +28,19 @@ doesn't check them.
 
 4. Commit on a branch and open a pull request. CI runs the same checks again.
 
+## Cut a release
+
+1. Set the new version in `VERSION` and add a matching
+   `## [X.Y.Z] - YYYY-MM-DD` section at the top of `CHANGELOG.md`.
+   `make check-version` confirms the two agree.
+
+2. Merge to `main`, then tag and push:
+
+   ```sh
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+   The release workflow reruns CI, checks the tag against `VERSION` and
+   `CHANGELOG.md`, and creates a GitHub Release whose notes are that
+   version's changelog section.

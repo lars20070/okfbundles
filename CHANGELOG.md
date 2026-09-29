@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make check-okf` now requires the bundle-root `index.md` to declare
   `okf_version: "0.2"` in its frontmatter. `okfctl validate` treats the
   declaration as optional, so the check script enforces it.
+- Release workflow: pushing a `vX.Y.Z` tag reruns CI and creates a GitHub
+  Release whose notes are the matching `CHANGELOG.md` section.
+- `make check-version`, run in CI, requires `VERSION` to match the topmost
+  release heading in `CHANGELOG.md`.
 
 ### Changed
 

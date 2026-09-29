@@ -18,14 +18,11 @@ and are validated with [`okfctl validate`](https://github.com/cwest/okfctl),
 which needs no per-bundle config. Bundles must not contain a `.okflintrc.json`
 (the retired `okf-lint` config).
 
-`attic/` holds the original OKF v0.1 archives of migrated bundles, kept
-byte-for-byte for reference. It is not checked by CI; don't add new bundles
-there.
-
 ## Checks
 
-CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
-`okf/**`, `scripts/**`, or the `Makefile`:
+CI (`.github/workflows/ci.yml`) runs these on every push/PR touching `okf/**`,
+`scripts/**`, the `Makefile`, `VERSION`, `CHANGELOG.md`, or
+`.github/workflows/**`:
 
 - `make check-okf` (`scripts/check-okf.sh`, requires `okfctl`) verifies:
   - `okf/` contains only `*.okf.zip` files.
@@ -37,7 +34,15 @@ CI (`.github/workflows/ci.yml`) runs both of these on every push/PR touching
   - Each bundle passes `okfctl validate` (the OKF v0.2 conformance floor).
 
   CI installs `okfctl` v0.4.0 with Go 1.26.8; keep local versions in step.
+- `make check-version` (`scripts/check-version.sh`) verifies that `VERSION`
+  equals the topmost `## [X.Y.Z]` heading in `CHANGELOG.md`, and that no
+  version has two headings.
 - `make shellcheck` runs shellcheck over every script in `scripts/`.
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`: it reruns the
+whole CI workflow, checks that the tag matches `VERSION`, and creates a GitHub
+Release whose notes are that version's `CHANGELOG.md` section (extracted by
+`scripts/release-notes.sh`). Re-runs leave an existing Release untouched.
 
 `.DS_Store` and `__MACOSX` (macOS zip metadata) are masked throughout these
 checks and tests — both in `okf/` itself and inside `*.okf.zip` archives, at
