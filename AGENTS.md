@@ -31,7 +31,10 @@ CI (`.github/workflows/ci.yml`) runs these on every push/PR touching `okf/**`,
   - The root `index.md` declares `okf_version: "0.2"` in its frontmatter.
     `okfctl validate` treats the declaration as optional, so the script
     enforces this repo invariant itself.
-  - Each bundle passes `okfctl validate` (the OKF v0.2 conformance floor).
+  - Each bundle passes `okfctl validate --no-ignore` (the OKF v0.2
+    conformance floor). `--no-ignore` makes it check every Markdown file,
+    including those in directories `okfctl` skips by default (`vendor`,
+    `build`, `dist`, `env`, …).
 
   CI installs `okfctl` v0.4.0 with Go 1.26.8; keep local versions in step.
 - `make check-version` (`scripts/check-version.sh`) verifies that `VERSION`
