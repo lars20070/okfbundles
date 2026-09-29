@@ -6,6 +6,10 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "${script_dir}/.." && pwd)
 okf_dir="${repo_root}/okf"
 
+# OKF spec version every bundle must declare. Bump it together with the okfctl
+# pin in CI, since okfctl validates against the rules of one spec version.
+okf_version="0.2"
+
 work_dir=$(mktemp -d)
 trap 'rm -rf "${work_dir}"' EXIT
 
@@ -23,10 +27,12 @@ status=0
 check_bundle() {
 	local zip=$1
 	local dest="${work_dir}/${zip##*/}"
+	local name=${zip##*/}
+	name=${name%.okf.zip}
 
 	# 2. archive must be healthy (extraction verifies every entry's CRC)
 	if ! unzip -qq "${zip}" -d "${dest}"; then
-		echo "${zip}: failed to unzip, archive may be corrupt"
+		echo "failed to unzip, archive may be corrupt (${name})"
 		status=1
 		return 0
 	fi
@@ -36,47 +42,57 @@ check_bundle() {
 	# 3. the archive holds a single root directory, without .okflintrc.json
 	local entries=("${dest}"/*)
 	if [[ ${#entries[@]} -ne 1 ]]; then
-		echo "${zip}: expected exactly one top-level entry in the archive, found ${#entries[@]}"
+		echo "expected exactly one top-level entry in the archive, found ${#entries[@]} (${name})"
 		status=1
 		return 0
 	fi
 
 	local root="${entries[0]}"
 	if [[ ! -d "${root}" ]]; then
-		echo "${zip}: top-level entry '${root##*/}' is not a directory"
+		echo "top-level entry '${root##*/}' is not a directory (${name})"
 		status=1
 		return 0
 	fi
 
 	if [[ -f "${root}/.okflintrc.json" ]]; then
-		echo "${zip}: root directory '${root##*/}' must not contain .okflintrc.json"
+		echo "root directory '${root##*/}' must not contain .okflintrc.json (${name})"
 		status=1
 		return 0
 	fi
 
-	# 4. the root index.md must declare okf_version "0.2"; okfctl validate
-	# treats the declaration as optional, so it's enforced here
+	# 4. the root index.md must declare okf_version "${okf_version}"; okfctl
+	# validate treats the declaration as optional, so it's enforced here
 	if [[ ! -f "${root}/index.md" ]]; then
-		echo "${zip}: root directory '${root##*/}' is missing index.md"
+		echo "root directory '${root##*/}' is missing index.md (${name})"
 		status=1
 		return 0
 	fi
-	if ! awk '
+	if ! awk -v want="okf_version: \"${okf_version}\"" '
 		NR == 1 { if ($0 != "---") exit; open = 1; next }
 		$0 == "---" { closed = 1; exit }
-		$0 == "okf_version: \"0.2\"" { found = 1 }
+		$0 == want { found = 1 }
 		END { exit !(open && closed && found) }
 	' "${root}/index.md"; then
-		echo "${zip}: root index.md must declare okf_version: \"0.2\""
+		echo "root index.md must declare okf_version: \"${okf_version}\" (${name})"
 		status=1
 		return 0
 	fi
 
-	# 5. the bundle must conform to the OKF v0.2 spec floor
-	if ! okfctl validate "${root}"; then
-		echo "${zip}: failed okfctl validate"
+	# 5. the bundle must conform to the OKF spec floor. --no-ignore walks
+	# the whole tree: okfctl otherwise skips directories such as vendor/, build/
+	# or env/, but in a distributed bundle those hold content too
+	local output
+	if ! output=$(okfctl validate --no-ignore "${root}" 2>&1); then
+		[[ -n "${output}" ]] && echo "${output}"
+		echo "failed okfctl validate (${name})"
 		status=1
+		return 0
 	fi
+	# replace okfctl's generic OK line with one naming the bundle, keeping any
+	# other output (e.g. advisory warnings)
+	output=$(grep -v '^OK: ' <<<"${output}" || true)
+	[[ -n "${output}" ]] && echo "${output}"
+	echo "OK, conforms to OKF v${okf_version} (${name})"
 }
 
 # 1. okf/ folder must contain only *.okf.zip files (macOS metadata is masked)
